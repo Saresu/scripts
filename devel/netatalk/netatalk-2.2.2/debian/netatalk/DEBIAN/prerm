@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit
+if [ -x "/etc/init.d/netatalk" ] || [ -e "/etc/init/netatalk.conf" ]; then
+	invoke-rc.d netatalk stop || exit $?
+fi
+# End automatically added section

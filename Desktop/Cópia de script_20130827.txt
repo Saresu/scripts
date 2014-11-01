@@ -1,0 +1,1197 @@
+instalacao realizada em 27 de agosto de 2013 as 17:50
+20130827
+- instalacao default com apenas alterando o fuso horario pra a cidade atual;
+- desligar todas as conexoes com a internet.
+- durante a instalação selecionado o teclado abnt-2
+- criado o usuario default no sistema com senha wolve;
+- modificado o mouse para usuarios canhotos;
+- atulizar ou complementar a instalacao do locale (languages) no sistema:
+	* abrir o System Settings -> Language Support. O Sistema normalmente reclama que "The language support is not installed completely"
+	* confirme a instalacao e apos o processo fechar as janelas.
+- abrir o system updater
+	* modificar as fontes de atualizacoes do update manager para incluir partners, partners source e unsupported updates (precise-backports);
+	* modificar os servidores e deixar que o sistema identifique o mas rapido
+- atualizar o sistema
+	* atualizado o banco de dados do apt-get e baixados os arquivos de atualização:
+		# apt-get update && apt-get upgrade 
+- apos atualizar via terminar retornar ao system updater e atualizar os demais pacotes
+- ativado a conta root
+	# sudo passwd root
+	* nova senha setada para wolverine4152
+- instalado o ubuntu one na conta igor:
+	* clicado no icone no unity e depois em install;
+	* necessario acesso root entao digitado a senha default para o usuario;
+	* apos a instalacao do programa altenticado com os seguintes parametros:
+		@ user:	igor.salles@gmail.com
+		@ pass: U4b1u5n2tu
+- apos atualizar via terminar (# apt-get upgrade) retornar ao system updater e atualizar os demais pacotes
+- instalar driver nvidia:
+	* baixados o driver da placa de video:
+		# apt-get -d install nvidia-319-updates
+- configurar o splash screen:
+	* caso a tela fique desconfigurada (boot e shutdown)
+	* # apt-get install v86d hwinfo
+	* # hwinfo --framebuffer
+	* anotar a resolucao suportada. no caso usei a do proprio desktop de 1280x1024
+	* gksudo gedit /etc/default/grub
+		+ buscar por GRUB_GFXMODE=
+	* logo abaixo dessa linha adicionar:
+		+ GRUB_GFXPAYLOAD_LINUX=1280x1024 (sua resolucao aqui)
+		+ salve o arquivo
+	* $ echo FRAMEBUFFER=y | sudo tee /etc/initramfs-tools/conf.d/splash
+	* # sudo update-grub2
+	* # sudo update-initramfs -u
+	* reboot
+- configurado o sistema para o ipfixo via widget do gnome para 10.0.1.90, 10.0.1.91 e 10.0.1.92:
+	* editar conexoes no network manager (gnome)
+	* clicar em wireless e selecionar a rede vigente e depois em editar;
+	* clicar na aba ipv4 settings;
+	* modificar de automatic(dhcp) para manual e adicionar no campo de endereços a seguinte configuracao:
+		address 10.0.1.90 netmask 255.255.255.0 gateway 10.0.1.1
+		DNS Servers	10.0.1.1
+	* forcar um reconect clicando no link de wireless no canto superior direito e disabling wireless e depois abbleling wireless.
+	* confirmar a configuracao no terminal com ifconfig para verificar se o ip do servidor realmente esta adequado para as configuracoes.
+- instalado o landscape e o PAM_motd simplesmente para dar um sysinfo na hora do login remoto e login nos terminais:
+	* roteiro em https://help.ubuntu.com/12.04/serverguide/pam_motd.html *
+	# apt-get update
+	# apt-get install weather-util landscape-common update-notifier-common
+	* criar o script /usr/local/bin/local_weather, a simple shell script to use weather with your local ICAO indicator:
+#!/bin/sh
+#
+#
+# Prints the local weather information for the MOTD.
+#
+# Replace KINT with your local weather station.
+# Local stations can be found here: http://www.weather.gov/tg/siteloc.shtml
+echo
+weather -i SBBR
+echo
+	* tornar o script executavel:
+		# chmod 755 /usr/local/bin/local-weather
+	* depois, criar a symlink para /etc/update-motd.d/98-local-weather:
+		# ln -s /usr/local/bin/local-weather /etc/update-motd.d/98-local-weather
+	* finalmente, sair do servidor e relogar para ver a mensagem do MOTD (ou apenas ctrl+alt+f1 se estiver no X).
+	* vide http://www.howtogeek.com/104708/how-to-customize-ubuntus-message-of-the-day/ para maiores configuracoes da welcome message;
+- instalar o openssh no sistema
+	roteiro: https://help.ubuntu.com/12.04/serverguide/server-openssh.html
+	# apt-get update
+	# apt-get install openssh-server
+	# apt-get install openssh-client
+	editar as configuracoes no ssh
+		# cp /etc/ssh/sshd_config /etc/ssh/sshd_config-original
+		# chmod 600 ssh_config-original
+		# editor /etc/ssh/sshd_config
+			## Editado em 20130827 18:52
+				Port 42222
+			## Editado em 20130827 18:52
+				PermitRootLogin no		
+			## Editado em 20130822 00:32 ** eof
+			#AllowUsers	igor
+			AllowGroups	netusers
+			Banner /etc/issue.net
+		# editor /etc/issue.net
+			+ Welcome to Isis SSH Server
+		# service ssh restart
+	* observacao * enquanto o allowusers estiver ativo mantenha comentado o allowgroups. apos a criacao do grupo netusers remova o comentario do allowgroups e comente allowusers.
+- instalar o webmin 
+	* instalar o Webmin como uma interface auxiliar para administrar o servidor, seguindo roteiro encontrado em http://openswitch.org/blog/ubuntu-12-dot-04-for-a-basic-home-server/
+	* editar a lista de sources (/etc/apt/sources.list) e adicionar as seguintes linhas:
+		deb http://download.webmin.com/download/repository sarge contrib
+		deb http://webmin.mirror.somersettechsolutions.co.uk/repository sarge contrib
+	* importar a chave gpg do desenvolvedor com os comandos:
+		$ mkdir ~/Devel && cd ~/Devel/ && mkdir webmin && cd webmin
+		$ wget http://www.webmin.com/jcameron-key.asc
+		# apt-key add jcameron-key.asc
+		$ rm jcameron-key.asc
+	* atualizar a lista de pacotes e e instalar o aplicativo com
+		# apt-get update && apt-get install webmin
+	* ao terminar a instalacao do webmin o seguinte warning deve aparecer:
+		@ Webmin install complete. You can now login to https://isis:10000/ as root with your root password, or as any user who can use sudo to run commands as root. @
+	* loguei como usuario e fui em webmin -> webmin configuration
+		+ em Ports and Addresses mudei ambas as portas para 11111 (specific e udp)
+	* caso nao consiga prosseguir com o login continue no roteiro para criar as senhas de acesso pro webmin:
+		**UPDATE** Nao precisei reconfigurar as senhas desta vez
+		** configurar o usuario com os comandos
+			# cd /usr/share/webmin
+			# perl changepass.pl /etc/webmin root *newpass*
+			@ a senha default configurada foi wolve4152
+			@ o usuario pode logar normalmente com a senha de usuario mas o root precisa obrigatoriamente mudar a senha utilizando os dois comando acima (caso nao tenha ativado a senha do root usando passwd).
+			@ Entrar na interface do webmin e logo acima dos comandos existe um link para criar o grupo Webmin. Basta clicar e adicionar os dados de acordo com suas preferencias. Em seguida a conversao dos usuarios unix para webmin funcionara.
+- criar usuario para gerenciamento da rede, utilizada interface do webmin:
+	* criar o usuario netuser para gerenciar os compartilhamentos de rede e as configuracoes que ficaram em seu home directory, utilizado o webmin para isso na aba system -> users and groups
+		usuario:	netuser (uid 440)
+		grupos:		netuser (uid 440), users
+	* adicionado grupo netusers
+		gid 440
+		users in group: igor netuser
+	* modificado user igor:
+		uid 501
+		gid 501 
+	* desta forma o acesso de outras maquinas *nix (no caso o Mac OS X) nao bloqueiam aces
+uario no sistema ubuntu. Usuarios com id inferior a 1000 nao possuem login no lightdm. mas nao basta alterar as configuracoes do lightdm i.e. /etc/users.conf e sim as configuracoes de login.defs (isso porque se o servico AccountService roda no sistema e faz com que as configuracoes em /etc/lightdm/users.conf sejam ignoradas, portanto faz-se necessario alterar esse arquivo.
+	* existe problemas no interelação com o lightdm, accountservice e o login.defs. Para tudo voltar a funcionar editei:
+		* o arquivo /etc/lightdm/users.conf adicionando o netuser em hidden-users;
+		* o arquivo /etc/lightdm/lightdm.conf nao foi modificado;
+		* o arquivo /etc/login.defs alterados UID_MIN para 500 e GID_MIN tambem para 500.
+	** TODO ** alterar as configuracoes do lightdm para permitir a insercao do nome de usuario ao inves de lista-lo. Para isso basta editar o arquivo /etc/lightdm/lightdm.conf para incluir greeter-hide-users=true
+		[SeatDefaults]
+		greeter-session=unity-greeter
+		user-session=ubuntu
+		# nao lista os usuarios do sistema com acesso grafico
+		greeter-hide-users=true
+		# desabilita a conta de guest
+		allow-guest=false
+- criados os mount points para serem compartilhados editando o arquivo /etc/fstab a saber:
+	criado os diretorios para serem montados i.e.:
+		# mkdir midia
+		# mkdir misc
+		# mkdir data
+	# cp /etc/fstab /etc/fstab.original
+	# editor /etc/fstab -->
+# /etc/fstab: static file system information.
+#
+# Use 'blkid' to print the universally unique identifier for a
+# device; this may be used with UUID= as a more robust way to name devices
+# that works even if disks are added and removed. See fstab(5).
+#
+# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+proc            /proc           proc    nodev,noexec,nosuid 0       0
+# / was on /dev/sda6 during installation
+UUID=0db1371b-c644-47c3-b433-09bfd765ad51 /               ext4    errors=remount-ro 0       1
+# swap was on /dev/sda5 during installation
+UUID=6d27cec6-88b8-4d33-8f5b-402df7ee2555 none            swap    sw              0       0
+# Fim do arquivo original
+#*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+## particoes para uso do servidor de arquivos
+# misc - arquivos variados e diversos, objetivo de armazenamento temporario
+/dev/sda3	/media/misc	ntfs	defaults	0	0
+# midia - particao ext4 para armazenar as musicas 
+/dev/sda7	/media/midia	ext4	defaults	0	0
+# data - particao ext4 para armazenamento de backups e arquivos importantes
+/dev/sda8	/media/data	ext4	defaults	0	0
+##
+#*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+- como mudamos o owner e o group das particoes ext4 elas nao montaram adequadamente. Para corrigir basta usarmos o velho chown (mudamos o user ui e o gui do main user);
+	reiniciado o sistema para verificar quaisquer erros que possam vir a ocorrer pela montagem das novas particoes. apos a reiniciacao do sistema modificado o gruop owner das particoes para netusers com os comandos:
+	# chgrp -Rv netusers /media/midia
+	# chgrp -Rv netusers /media/data
+	# chmod -Rv 774 /media/midia
+	# chmod -Rv 774 /media/data
+	*** Obs: a particao ntfs /dev/sd3 montada em /media/misc tem permicoes 777 mesmo o owner sendo root:root
+	criada a pasta dentro do share /media/data para salvar os backups das maquinas OS X usando o Time Machine
+	$ mkdir TM
+	$ chgrp -Rv netusers TM
+20130828
+- Instalar o VNC para conexao e compartilhamento de tela
+	# apt-get update && apt-get install gnome-core
+	# apt-get install vnc4server
+	* iniciar o vncserver como usuario para criar os arquivos de configuracao
+		$ vncserver
+	* criado o script
+		#!/bin/sh  
+		echo "----------------------------------------" 
+		echo "Job rodado em $(date)"
+		echo "----------------------------------------" 
+		#/usr/bin/vncserver -geometry 1280x1024 -depth 24 ubuntu anterior 12.04
+		/usr/bin/vncserver -geometry 1280x1024
+	* como temos o Webmin rodando no servidor vamos utilizar ele para adicionar o job no cron table para rodar em tempo de boot. Abra o Webmin e navegue System -> Scheduled Cron Jobs e entao clique em Create a new scheduled cron job na parte superior do frame.
+	* IMPORTANTE: rodar o servidor vnc pelo menos uma vez para ele vai criar os arquivos de parametros e configuracoes pro usuario. Logo apos o primeiro startup, realizando:
+	$ vncserver
+	$ vncserver -kill :1
+	$ nano /home/<user>/.vnc/xstartup ele deve ficar identico a:
+		#!/bin/sh
+		#
+		# Uncomment the following two lines for normal desktop:
+		unset SESSION_MANAGER
+		# exec /etc/X11/xinit/xinitrc
+		gnome-session --session=gnome-classic &
+		#
+		[ -x /etc/vnc/xstartup ] && exec /etc/vnc/xstartup
+		[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+		xsetroot -solid grey
+		vncconfig -iconic &
+		#x-terminal-emulator -geometry 80x24+10+10 -ls -title "$VNCDESKTOP Desktop" &
+		#x-window-manager &
+	* caso nao faca as modificacoes acima o xserver levanta sem gerenciador de janelas com fundo cinza.
+
+	* Para facilitar e nao precisar digitar tudo vou parafrasear o guia:
+		My personal preference is to create a cron job to run a script at boot time. The easiest way to do this is to use Webmin. If you decide to go down the cron job route then from within Webmin you can very quickly see exactly what jobs are being run and can also easily enable and disable such jobs just by ticking a box. 
+So, within Webmin click on System and then Scheduled Cron Jobs. Then click the Create a new scheduled cron job option at the top of the screen that opens.
+Click the button next to the Execute cron job as and choose the username you created when you installed Ubuntu. Hint: your username appears in a Putty/Terminal session prompt. eg. yourusernameappearshere@MyMediaServer.
+Type or paste the name of your script including the full path eg. /home/htkh/MyScripts/StartVNC.sh >/dev/null into the Command box, replacing htkh with your own username, MyScripts with the name of the folder you created to store your scripts and StartVNC.sh with the script name. The >/dev/null parameter will discard any output the script may produce.
+Enter a suitable description in the Description field.
+In the When to Execute - Simple schedule drop-down list choose When system boots then click the Create button at the bottom of the screen.
+Now's probably a good time to test it. I'd recommend first testing that you've set the job up correctly within Webmin. You can do this by clicking on the job you've just created from the long list of cron jobs. Then click the Run Now button at the bottom of the screen. You should see a message similar to the one you saw when you tested it from a Putty/Terminal session.
+
+	* OBSERVACOES: Optei por rodar o job atraves do cron mas existem outras alternativas para rodar automaticamente e levantar o servidor:
+		a) rc.local
+			# nano /etc/rc.local
+			* editar o arquivo e apontar o cursor acima da linha "exit 0"
+			* adicionar /usr/bin/vncserver -geometry 1280x1024 -depth 24
+			* omitir o operador depth se for ubuntu 12.04+
+		b) runlevel
+			* alterar o script criado acima com o comando 
+				chmod a+x startVNC.sh
+				# cp startVNC.sh /etc/init.d
+				$ update-rd.d startVNC.sh defaults
+			* caso queira remover o script do runlevel
+				# update-rd.d -f startVNC.sh remove
+	roteiros seguidos
+	   http://www.wikihow.com/Setup-VNC-on-Mac-OS-X
+	   http://coddswallop.wordpress.com/2012/05/09/ubuntu-12-04-precise-pangolin-complete-vnc-server-setup/
+	   http://www.havetheknowhow.com/Configure-the-server/Install-VNC.html
+	*** OBSERVACAO *** IGNORAR O MASCARAMENTO SENAO SERA NECESSARIO RODAR O DISPLAY MANAGER PARA PODER LOGAR NA GUI
+		Com o vnc e o ssh rodando teoricamente nao seria necessario o gdm rodar quando o sistema subir no caso de um headless server. Como quero que o servidor possa atuar como um desktop vou manter o gdm e o gnome subindo mesmo consumindo um pouco de recursos e tempo de loading mas o overhead eh insignificante. Apenas como referencia para suprimir o gdm durante o loading do servidor basta:
+		a) # nano /etc/init/gdm.conf
+		b) mascarar/comentar todas as linhas apartir de "start on ((filesystem…"
+	NOTA: Preferir manter o lightdm como display manager. 
+- adicionar o medibuntu a lista de repositorios.
+	* roteiro: http://www.medibuntu.org/repository.php
+	* utilizar o seguinte comando no terminal:
+		$ sudo -E wget --output-document=/etc/apt/sources.list.d/medibuntu.list http://www.medibuntu.org/sources.list.d/$(lsb_release -cs).list && sudo apt-get update && sudo apt-get --yes --allow-unauthenticated install medibuntu-keyring && sudo apt-get update
+		$ sudo apt-get install app-install-data-medibuntu apport-hooks-medibuntu
+	* adicionadas as seguintes fontes para a lista /etc/apt/sources.list (ja adicionadas via update manager acima):
+		deb http://archive.canonical.com/ubuntu precise partner
+		deb-src http://archive.canonical.com/ubuntu precise partner
+	* adicionado o ppa do grupo de desenvolvedores do gstreamer (https://launchpad.net/~gstreamer-developers/+archive/ppa https://wiki.ubuntu.com/Novacut/GStreamer1.0#Adding_PPA_for_Ubuntu_Precise):
+		sudo add-apt-repository ppa:gstreamer-developers/ppa
+		// sudo apt-get update
+		// sudo apt-get install gstreamer1.0*
+- instalar aria2
+	# apt-get install aria2
+- instalar o java + netbeans bundle da oracle
+	roteiro http://www.webupd8.org/2012/01/install-oracle-java-jdk-7-in-ubuntu-via.html
+	* adicionar o ppa
+		# add-apt-repository ppa:webupd8team/java
+		# apt-get update
+	* instalar o jdk
+		# apt-get install oracle-java7-installer
+	* apos a instalacao usar o app para tornar o java oracle default
+		# apt-get install oracle-java7-set-default
+	* se quiser instalar manualmente sem o ppa deve fazer o download do arquivo bundle em http://www.oracle.com/technetwork/java/javase/downloads/index.html
+		# aria2c -x16 -c -V http://download.oracle.com/otn-pub/java/jdk-nb/7u25-7.3.1/jdk-7u25-nb-7_3_1-linux-x64.sh?AuthParam=1377197648_dfad769a4780473752150023cff8487e
+	* rodar o script/installer fornecido pela oracle
+- instalar o netbeans
+	* baixar o installer da pagina no netbeans.org
+		$ aria2c -X16 -c -V http://dlc.sun.com.edgesuite.net/netbeans/7.3.1/final/bundles/netbeans-7.3.1-javase-linux.sh
+	* mudar o arquivo para executavel
+		$ chmod +x netbeans-7.3.1-javase-linux.sh
+	* acionar o installer e seguir as configuracoes da tela
+		# ./path/to/installer/netbeans-7.3.1-javase-linux.sh
+- instalar o KeePassX
+	# apt-get install keepassx (ou via ubuntu software center)
+- instalar intellijIDEA via Ubuntu Software Center
+	* procurar o app intellij e clicar em buy
+	* logar na conta ubuntu one e aguardar o fim da instalacao
+- instalar e configurar o samba
+	# apt-get update
+	# apt-get install samba
+	# apt-get install samba-common
+	# apt-get install system-config-samba
+	* para configurar o samba e limitar o acesso aos recursos sera utilizado o mesmo usuario e grupo de rede, i.e. netuser. usando a interface do webmin selecione refresh modules depois regarregue a pagina (F5 ou Command + R);
+	* dentro de Servers > Samba Windows File Sharing > clicar em convert users > All except listed users and UID ranges 0-499 e confirms com as demais configuracoes default;
+	* após a conversão editar o usuario e setar a senha de acesso;
+	* crie caso necessario os diretorios/particoes (caso ainda nao estejam configurados) a serem acessados via samba;
+	* entre em create a new file share na parte superior do frame do samba;
+	* clique em Home Directories Share e confirme as configuracoes default;
+	* depois da criacao do share click nele (homes) e mude a configuracao para writable? yes (dentro da criacao de share points clicar em security and access control);
+	* repetir o precesso para todos os shares (atualmente music, misc e data) observando de limitar o acesso para @netusers.
+	* por fim faremos os symlinks visiveis.
+		# nano /etc/samba/smb.conf
+		* adicionar as seguinte linhas na secao geral:
+			follow symlinks = yes
+			wide links = yes
+			unix extensions = no
+	* modificar os acessos ao workgroup clicando em windows networking
+		* modificar o Workgroup (no caso alterei para DJED)
+		* modificar WiNS Mode para Be WINS Server
+		* server name Ihy e server alias Ihy
+		* salvar
+	* na tela principal do samba no webmin reinicar o servidor.
+	* acesso via mac os x via finder pela string smb://isis.local
+	***OBSERVACAO*** a configuracao pode ser feita usando a ferramenta GUI samba que instalamos no inicio do roteiro. Ela foi instalada para facilitar a administracao do samba quando o administrador estiver in loco ou usando um vnc.
+- instalar o servidor SFTP (11:11)
+	* roteiro inicial: http://pplware.sapo.pt/linux/aprenda-a-instalar-um-servidor-de-ftp-em-5-minutos/
+	# apt-get update
+	# apt-get install vsftpd
+	# cp /etc/vsftpd.conf /etc/vsftpd.conf.original
+	# editor /etc/vsftpd.conf
+	disabilitar o acesso de anonimos, habilitar usuarios locais de entrar no servidor
+		# No anonymous login
+		anonymous_enable=NO
+		# Let local users login
+		# If you connect from the internet with local users, you should enable TLS/SSL/FTPS
+		local_enable=YES
+		# Write permissions
+		write_enable=YES
+		# ftp-data originate from port 20000 (se modificar aparentemente ele nao aceita conexoes. verificar depois)
+		connect_from_port_20000=YES
+		# mudar a porta de acesso 
+		listen_port=21000
+		comentar a linha que diz: 
+		# connect_from_20_YES=port
+	* apos ajustas as configuracoes acima voce ja podera acessar o servidor ftp. o acesso com o usuario igor permitiu navegar por todo o sistema. o mac os montou o diretorio de usuario mas o finder limita somente acesso read-only. para permitir acesso write utilizei o filezilla e o terminal sem problemas. existe um aplicativo que permite o finder montar os shares ftp read/write. Vide: http://macfusionapp.org e http://www.danbishop.org/2011/09/10/how-to-mount-sftp-ssh-shares-in-os-x-lion/
+	* com o objetivo de manter o acesso ftp seguro faremos ajustes adicionais no servidor:
+	 * criaremos um diretorio em /etc para guardar os cerficados para o vsftpd
+		# mkdir /etc/vsftpd
+		# mkdir /etc/vsftpd/tls
+		# mkdir /etc/vsftpd/tls/private
+		# mkdir /etc/vsftpd/tls/csr
+	* sudo mkdir /etc/vsftpd && sudo mkdir /etc/vsftpd/tls && sudo mkdir /etc/vsftpd/tls/private && sudo mkdir /etc/vsftpd/tls/csr
+	* gerar a chave privada do server
+		# openssl genrsa -out /etc/vsftpd/tls/private/isis.key 2048
+	* gerar um certificate signing request (csr)
+		# openssl req -new -key /etc/vsftpd/tls/private/isis.key -out /etc/vsftpd/tls/csr/isis.csr -sha1
+			*a challenge password []: i4s1i5s2
+	* gerar o certificado auto-assinado X.509 com validade de alguns anos:
+		# openssl x509 -req -days 1800 -in /etc/vsftpd/tls/csr/isis.csr -signkey /etc/vsftpd/tls/private/isis.key -out /etc/vsftpd/tls/isis.pem
+		# mkdir /etc/vsftpd/tls/cert
+		# mv /etc/vsftpd/tls/isis.pem /etc/vsftpd/tls/cert
+	* mudar acesso e propriedade do certificado para root:
+		# chown root:root /etc/vsftpd/tls/cert/isis.pem
+		# chmod 600 /etc/vsftpd/tls/cert/isis.pem
+	* editar o arquivo de configuracao do servidor e adicionar
+		# editor /etc/vsftpd.conf
+		* adicionar ao final do arquivo
+			ssl_enable=YES
+			allow_anon_ssl=NO
+			force_local_data_ssl=NO
+			force_local_logins_ssl=NO
+			ssl_tlsv1=YES
+			ssl_sslv2=NO
+			ssl_sslv3=NO
+			rsa_cert_file=/etc/vsftpd/tls/cert/isis.pem
+			rsa_private_key_file=/etc/vsftpd/tls/private/isis.key
+	* para poder acessar o servidor usando o Filezilla faz-se necessario a adicao dos seguinte modificadores:
+		ssl_ciphers=HIGH
+	* para debugar as conexoes com o servidor adicionei
+		log_ftp_protocol=YES
+		debug_ssl=YES
+	* o filezilla acessa o servidor basta usar o ftpes://ip
+Fontes importantes:
+https://help.ubuntu.com/12.04/serverguide/ftp-server.html
+http://www.thatsgeeky.com/2011/01/configuring-vsftpd-to-use-tls/
+https://wiki.archlinux.org/index.php/Very_Secure_FTP_Daemon
+http://www.cyberciti.biz/tips/configure-vsfptd-secure-connections-via-ssl-tls.html
+http://wiki.vpslink.com/Configuring_vsftpd_for_secure_connections_(TLS/SSL/SFTP)
+http://ubuntuserverguide.com/2012/05/secure-ftp-server-tlsssl-connection-ubuntu-server-1204.html
+http://forum.filezilla-project.org/viewtopic.php?f=2&t=23275
+http://www.iweconsulting.net/index/entry/entryid/9/gnutls-error--12:-a-tls-fatal-alert-has-been-received.html
+- instalado antivirus (11:24)
+	# apt-get update
+	# apt-get install clamav clamtk clamav-daemon
+	apos a instalacao atualizar a base de dados do antivirus
+		# freshclam
+		# service clamav-daemon start
+- instalando handbrake do ppa
+	roteiro em: http://www.liberiangeek.net/2012/07/install-handbrake-from-ppa-in-ubuntu-12-04-precise-pangolin/
+	# add-apt-repository ppa:stebbins/handbrake-snapshots
+	# apt-get update
+	# apt-get install handbrake-gtk handbrake-cli
+- instalar calibre
+	* roteiro http://calibre-ebook.com/download_linux 
+	* via apt-get (esta nas fontes default) basta apt-get install calibre
+	* optado por instalar a versao mais recente usando
+	#  python -c "import sys; py3 = sys.version_info[0] > 2; u = __import__('urllib.request' if py3 else 'urllib', fromlist=1); exec(u.urlopen('http://status.calibre-ebook.com/linux_installer').read()); main()"
+	* para futuros updates pode-se usar o seguinte comando:
+		$ sudo python -c "import sys; py3 = sys.version_info[0] > 2; u = __import__('urllib.request' if py3 else 'urllib', fromlist=1); exec(u.urlopen('http://status.calibre-ebook.com/linux_installer').read()); main(install_dir='/opt')"
+- foram instalado os seguinte aplicativos desktop (11:3-):
+	# apt-get update
+	# apt-get install amarok gimp flashplugin-installer amule audacity vuze bluefish dvdrip filezilla ttf-mscorefonts-installer gnucash gstreamer1.0* gtkpod k3b kino mplayer smplayer eclipse kompozer scribus vlc* mozilla-plugin-vlc xchat-gnome xmms2* sound-juicer acroread non-free-codecs ubuntu-restricted-extras libdvdcss2 xine-ui xine-plugin evolution chromium-browser googleearth-package skype banshee transmission gdebi lynx synaptic p7zip rar unrar zip unzip
+	* em seguida rodado o comando para atualizar o index do xanpian
+		# update-apt-xapian-index
+- instalado no-ip 2
+	roteiro: http://askubuntu.com/questions/170932/no-ip-2-install-in-ubuntu-12-04-no-targets-specified-and-no-makefile-found-stop
+	http://www.noip.com/support/knowledgebase/installing-the-linux-dynamic-update-client-on-ubuntu/
+	$ mkdir ~/devel/noip
+	$ cd ~/devel/noip
+	$ aria2c -x16 -c -V http://www.no-ip.com/client/linux/noip-duc-linux.tar.gz
+	$ tar -xzvf noip-duc-linux.tar.gz
+	$ cd noip-2.1.9-1
+	$ make
+	# make install
+	# cp debian.noip2.sh /root/scripts/noip.sh
+	# chmod +x /root/scripts/noip.sh
+	# chmod 700 /usr/local/bin/noip2
+	# chown root:root /usr/local/bin/noip2
+	# chmod 600 /usr/local/etc/no-ip2.conf
+	# chown root:root /usr/local/etc/no-ip2.conf
+		+ sudo chown root:root /usr/local/bin/noip2 && sudo chmod 600 /usr/local/etc/no-ip2.conf && sudo chown root:root /usr/local/etc/no-ip2.conf
+	criado script para iniciar o noip
+	#!/bin/sh
+	echo "-------------------------------------------"
+	echo " No-IP Daemon iniciado em $(date) "
+	echo "-------------------------------------------"
+	echo ""
+	/usr/local/bin/noip2 -d >> /tmp/noip2.debug.log
+	coloquei o script dentro do home do root i.e. /root/scripts/noip2sync.sh
+	# chmod +x /root/scripts/noip2sync.sh
+	# chown root:root /root/scripts/noip2sync.sh
+	adicionado via webmin ao cron tables para rodar em tempo de boot.
+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+	How to install No-IP Linux Dynamic Update Client (DUC) on your Ubuntu 12.04 LTS.
+	You will be able to install No-IP.com’s DUC in just a few minutes with terminal. Once you have opened up your terminal window you will need to login as the “root” user. You can become the root user from the command line by entering “sudo -s” followed by the root password on your machine.
+
+	    cd /usr/local/src/
+	    wget http://www.no-ip.com/client/linux/noip-duc-linux.tar.gz
+	    tar xf noip-duc-linux.tar.gz
+	    cd noip-2.1.9-1/
+	    make install
+
+You will then be prompted to login with your No-IP.com account username and password.
+
+If you get “make not found” or “missing gcc” then you do not have the gcc compiler tools on your machine. You will need to install these in order to proceed.
+
+To Configure the Client:
+
+As root again (or with sudo) issue the below command:
+
+    /usr/local/bin/noip2 -C (dash capital C, this will create the default config file)
+
+You will then be prompted for your username and password for No-IP, as well as which host names you wish to update. Be careful, one of the questions is “Do you wish to update all hosts”. If answered incorrectly this could effect host names in your account that are pointing at other locations.
+
+Now the client is installed and configured, you just need to launch it. Simply issue this final command to launch the client in the background:
+
+    /usr/local/bin/noip2
+
+Read the README file in the no-ip-2.1.9 folder for instructions on how to make the client run at startup. This varies depending on what Linux distribution you are running.
+	#-#-sudo apt-get install noip2-#-# nao funciona no 12.04 
+- instalar o NFS server
+	# apt-get update
+	# apt-get install nfs-kernel-server
+	via webmin adicionado as pastas para compartilhar sendo elas:
+		/home/igor
+		/media/misc
+		/media/data
+		/media/misc
+	as opceos foram feitas de acordo com http://www.havetheknowhow.com/Configure-the-server/Configure-NFS.html a saber: 
+		Read only? No.
+		Disable subtree checking?  Yes.
+		Clients must be on secure port?  No.
+		Hide the filesystem?  No.
+	apesar de tudo nao consegui permissoes de write.
+	************************************************
+		TODO
+	************************************************
+	Estudar como fazer o nfs funcionar para writes sem necessariamente mudar o id do usuario.
+	***OBSERVACAO*** mudeio o usser id do usuario igor no servidor ubuntu para o mesmo usuario do sistema OSX e resolveu o problema de escrita. Mesmo assim é apenas um paleativo, o ideal seria instalar um kerberos ou mesmo um ldap.
+	Para montar o servidor no mac deve-se adicionar o mount point i.e. nfs://servidor/mountpoint caso contrario vai dar sem permicao. provavelmente preciso mudar alguma coisa nos exports. Estado final do /etc/exports ajustado depois das configuracoes feitas pelo webmin:
+# /etc/exports: the access control list for filesystems which may be exported
+#		to NFS clients.  See exports(5).
+#
+# Example for NFSv2 and NFSv3:
+# /srv/homes       hostname1(rw,sync,no_subtree_check) hostname2(ro,sync,no_subtree_check)
+#
+# Example for NFSv4:
+# /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
+# /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
+#
+# comentado o que foi feito pelo webmin
+#comentado o que foi feito pelo webmin
+# de acordo com o manual https://help.ubuntu.com/community/NFSv4Howto
+/export/igor	*(insecure,no_subtree_check,rw,nohide,root_squash)
+/export		*(insecure,no_subtree_check,rw,nohide,root_squash)
+/export/data	*(insecure,no_subtree_check,rw,nohide,root_squash)
+/export/midia	*(insecure,no_subtree_check,rw,nohide,root_squash)
+/export/misc	*(insecure,no_subtree_check,rw,nohide,root_squash)
+#EOF
+- Instalar e configurar o afp e os compartilhamentos de rede para acesso na rede (12:22):
+	roteiro: http://kremalicious.com/ubuntu-as-mac-file-server-and-time-machine-volume/
+	http://langit.wordpress.com/2011/09/14/share-folder-in-ubuntu-11-04-for-mac-osx-lion/
+	http://www.xdracco.net/time-machine-backup-volume-on-ubuntu-server/#afpd.conf
+	http://pwntr.com/2012/03/03/easy-mac-os-x-lion-10-7-time-machine-backup-using-an-ubuntu-linux-server-11-10-12-04-lts-and-up/
+	* Obs: a instalacao direto das fontes em source.list tem funcionado nao sendo necessaria nem mesmo a instalacao do pacote avahi. Ao final vou recompilar o netatalk para ver os resultados.
+	(# apt-get install netatalk)
+	# apt-get build-dep netatalk
+	# apt-get install fakeroot libssl-dev cracklib-runtime
+	# apt-get source netatalk
+	$ cd netatalk-2*
+	# DEB_BUILD_OPTIONS=ssl dpkg-buildpackage -rfakeroot
+	# dpkg -i ~/netatalk_2*.deb
+	# apt-mark hold netatalk (12.04+) ou
+	# echo "netatalk_2.deb" | dpkg --set-selections
+	* editar o arquivo /etc/netatalk/afpd.conf
+		 - -tcp -noddp -uamlist uams_dhx.so,uams_dhx2_passwd.so -nosavepassword
+	* editar o arquivo /etc/default/netatalk
+		conferir se CNID_METAD_RUN=yes
+	* configurar o arquivo /etc/netatalk/AppleVolumes.default 
+		# cp AppleVolumes.default AppleVolumes.default.original
+		# editor AppleVolumes.default 
+## Editado em 20130823 11:24
+# http://pwntr.com/2012/03/03/easy-mac-os-x-lion-10-7-time-machine-backup-using$
+##
+:DEFAULT: cnidscheme:dbd options:upriv,usedots
+##
+~/      "$u"
+## Time Machine Share
+/media/data/tmachine "arueris" allow:@netuser cnidscheme:dbd options:usedots,upriv,tm
+#
+## EOF
+	* para mudar a cara do servidor de desktop para servidor faremos
+		# nano /etc/avahi/services/afpd.service 
+<?xml version="1.0" standalone='no'?><!--*-nxml-*-->
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+	<service-group>
+		<name replace-wildcards="yes">%h</name>
+			<service>
+				<type>_afpovertcp._tcp</type>
+				<port>548</port>
+			</service>
+			<service>
+				<type>_device-info._tcp</type>
+				<port>0</port>
+				<txt-record>model=iMac</txt-record>
+			</service>
+	</service-group>
+	* reiniciar afpd com
+		# service netatalk restart && service avahi-daemon restart
+- reboot (o sistema pediu restart para atualizar)
+- instalar impressora virtual (pdf) e airprint (CUPS) (12:46)
+	Roteiro em: http://voleinikov.com/blog/2013/03/28/adding-an-virtual-pdf-airprinter-in-ubuntu-12-dot-04/
+	* verificar se o CUPS esta instalado no servidor:
+		# dpkg -s cups | grep Status
+	* instalar os pacotes necessarios
+		# apt-get install cups cups-pdf
+	* pos a instalacao dos dois pacotes uma impressora pdf sera criada automaticamente. Quando for necessario gerar o serviço do airprint com essa impressora (pelo menos ate a presente data) a impressora nao estará como shared para a rede e o script nao gerara os arquivos necessarios. Entao foi necessario fazer:
+		a) abrir a pagina web de administracao do cups (localhost:631/admin);
+		b) ajustar as configurações do servidor para:
+			* show printers on other systems
+			* show printers connected to this system
+			* allow printing from the internet
+			* allow remote administration
+			* allow users to cancel any job (not just their own)
+		c) clicar em manage printers, em seguida clicar na impressora (PDF), depois em administration selecionar modify printer:
+			* selecionar CUPS-PDF (virtual pdf printer) e continue;
+			* marcar share this printer, as outras opções são opcionais;
+			* selecionar generic driver cups-pdf-printer e
+			* clicar em modify printer;
+	* verificar se o arquivos de configuracoes (/etc/cups/cupsd.conf) estao com os seguites paramentros, modifica-los caso contrario:
+		* Port Localhost:631	> Port 26310
+		* BrowseAllow		> BronseAllow all
+	* verificar se o Avahi-daemon esta instalado (caso tenha instalado o netatalk provavelmente ja o tem)
+		$ dpkg -s avahi-daemon | grep Status
+		# apt-get install avahi-daemon
+	* reiniciar o servidor cups
+		# service cups restart
+	gerar o arquivo de configuração para o airprint (o git deve estar instalado no sistema caso contrario instalar com # apt-get install git)
+		$ cd ~/tmp
+		$ git clone https://github.com/tjfontaine/airprint-generate.git airprint-script
+		$ cd airprint-script
+		$ python airprint-generate.py
+	* mover o arquivo de configuração gerado pelo script para os servicos do Avahi
+		# mv AirPrint-PDF.service /etc/avahi/services/
+	Reiniciar os dois servidores
+		# service cups restart
+		# service avahi-daemon restart
+	Adicionar dois novos arquivos de configuracao
+		# gedit /usr/share/cups/mime/airprint.types
+			#
+			# "$Id: $"
+			#
+			# AirPrint type
+			image/urf urf string(0,UNIRAST<00>)
+			#
+			# End of "$Id: $".
+			#
+		# gedit /usr/share/cups/mime/airprint.convs
+			#
+			# "$Id: $"
+			#
+			# AirPrint
+			# Updated list with minimal set 25 Sept
+			image/urf application/pdf 100 pdftoraster
+			#
+			# End of "$Id: $".
+			#
+	* ativar Impressão Virtual de Devices Anonimos
+		* editar o arquivo de configuração cups (/etc/cups/cups-pdf.conf) e remover o comentario como segue
+			# editor /etc/cups/cups-pdf.conf
+			* comentar Out ${HOME}/PDF
+			* remover o comentario de AnonDirName /var/spool/cups-pdf/ANONYMOUS
+	* reiniciar os dois servidores
+		# service cups restart
+		# service avahi-daemon restart
+	* os arquivos impressos estarao dentro do path /var/spool/cups-pdf
+- Instalar o Sqlite3 
+	# apt-get install sqlite3 sqlitebrowser
+- Instalar o LAMP (linux apache mysql php, pearl, python)
+		# apt-get update 
+	* instalar o Apache, Mysql e PHP
+		# apt-get install lamp-server^
+		* entre com w4o1l5v2erine para a senha root mysql
+	* mais alguns aplicativos necessarios para PHP5 Mods
+		# apt-get install php5 php5-gd php5-mysql php5-curl php5-cli php5-cgi php5-dev
+	* instalar o Phpmyadmin
+		# apt-get install phpmyadmin
+			* escolha apache quando questionado
+			* escolha sim para dbconfig-common
+			* escolha w4o1l5v2erine quando questinado sobre a senha adm
+	* suprimir o aviso do apache sobre o host 
+		# editor /etc/apache2/httpd.conf
+		* adicionar "ServerName localhost"
+		* salvar e # service apache2 restart
+	* instalar o Alternative PHP Cache (apc) - é um cacher de objetos, funções e queries em banco de dados do PHP que é carregado na memoria.
+		# apt-get install make
+		# apt-get install libpcre3-dev
+		# apt-get install php-pear
+		# pecl install apc
+			* escolhido sim para debugging in APC os demais seguir com default
+		# service apache2 restart
+		* OBS: pode-se instalar o apc simplesmente com um apt-get install php-apc mas a versao no repositorio eh antiga compilando o apc da forma explicitada acima utilizamos a ultima versao disponivel. Caso seja necessario desinstalar o apc utilizar # pecl uninstall apc
+	* instalar o Memcached - Como o apc eh um sistema de caching de alta performance na memoria, no entanto funciona com multiplos servidores (diferente do apc).
+		# apt-get install memcached
+		# apt-get install php-pear
+		# pecl install memcache
+			* aceitei as configuracoes default
+	* instalar o imagemagick
+		# apt-get install imagemagick
+	Instalar Icecast2 - icecast eh um server de audio streaming (como shoutcast)
+		# apt-get install icecast2
+			* configure o icecast e adicionei as duas primeiras com as senhas w4o1l5v2erine e a de admin como w4o1l5v2erine
+		* habilitar o script init.d. Ir ate o fim do arquivo e mudar enable=true
+			# nano /etc/default/icecast2
+		iniciar o servidor 
+			# service icecast2 start
+	* instalar o Graphical Server Monitor - Munin
+		# apt-get install php5-cli
+		# apt-get install munin munin-node
+		* configurar o servidor
+			# nano /etc/munin/munin.conf
+			* na lista dos diretorios de operacao deve-se mudar logo no topo pelo menos:
+				htmldir /var/www/munin
+			* agora editar o /etc/munin/apache.conf
+				# echo "Alias /munin /var/www/munin" > /etc/munin/apache.conf
+				* nao funcionou comigo tive de alterar manualmente o arquivo.
+			* mover os arquivos do servidor para /var/www/munin
+				# mv /var/cache/munin/www/ /var/www/munin
+			
+			* configurar as permicoes
+				# chown munin.munin -R /var/www/munin
+			* reiniciar o servidor
+				# service munin-node restart
+			* e por fim reiniciar o apache
+				# service apache2 restart
+	* instalar o Cacti - Graphical Server Monitor
+		# apt-get install cacti-spine
+		* escolher ok para as informacoes de mudanca de alocacao de arquivos, escolher sim para dbconfig-common, senha mysql w4o1l5v2e, escolher apache2. Quando terminar precisa configurar acessando:
+			http://server/cacti
+		* ao logar no cacti pela primeira vez usar admin admin, alterada a senha para w4o1l5v2erine
+		* caso necessario desinstalar basta
+			# apt-get remove cacti
+	* instalar o BMON - Simple CLI Banwidth Monitor
+		# apt-get install bmon
+	Instalar os utilitarios Zip, Unzip, rar, unrar
+		# apt-get install zip unzip rar unrar
+
+	Other handy related commands:
+		Edit PHP.ini
+			sudo nano /etc/php5/apache2/php.ini
+		Restart Apache
+			sudo /etc/init.d/apache2 restart
+		Set Recursive Permissions for your websites directory
+			sudo chmod -R 775 /var/www/
+			cd /var/www/ 
+			sudo chmod -R www-data:www-data FOLDER NAME
+		Block IP addresses/hackers using IPTABLES
+			Single IP
+				iptables -A INPUT -s 192.168.100.1 -j DROP
+			IP Range
+				iptables -A INPUT -s 192.168.100.0/24 -j DROP
+			You can also manage IPTABLES (e.g., the linux firewall) via Webmin under “Networking”.
+		Manage packages
+			sudo apt-get update && sudo apt-get upgrade
+			sudo apt-get autoremove
+		Remove LAMP
+			sudo apt-get purge libapache2-mod-auth-mysql phpmyadmin
+			sudo apt-get purge mysql-server mysql-server-5.1 mysql-server-core-5.1
+			sudo apt-get purge apache2 apache2-mpm-prefork apache2-utils apache2.2-bin apache2.2-common libapache2-mod-php5
+			sudo apt-get autoremove
+		Serve your websites from an EBS volume
+			This practice has saved my butt on more than one occasion. Rather than use the given storage attached to the EC2 instance, I always create a 1TB EBS volume and mount it as /public_html/. That way, if your EC2 instance crashes…you’re web site files will not. For this, we’ll assume our attached EBS volume is /xvdf/.
+			First you must be logged in as root:
+				su
+			Make sure you’re in the file system root:
+				cd
+			Now, let’s list all the attached drives. You should see /dev/xvda1, /dev/xvdb, /dev/xvdf/ etc…
+				sudo fdisk -l
+			Let’s make a directory (such as /public_html/)
+
+				mkdir /public_html/
+			Finally, let’s mount our EBS volume:
+				mount -t ext4 /dev/xvdf /public_html/
+			Now you can serve your websites from an EBS volume!
+
+		Benchmark the CPU
+			time for i in {0..10000}; do for j in {0..1000}; do :; done; done
+		More resources:
+http://gregrickaby.com/2011/06/how-to-create-virtual-servers-in-webmin-for-apache.html
+http://www.ubuntugeek.com/step-by-step-ubuntu-11-04-natty-lamp-server-setup.html
+http://www.howtoforge.com/ubuntu_lamp_for_newbies
+http://www.techtickle.com/how-to-setup-lamp-on-ubuntu.html
+http://en.wikipedia.org/wiki/List_of_PHP_accelerators
+http://www.linuxjournal.com/article/7451
+http://www.ubuntugeek.com/install-and-configure-cacti-monitoring-tool-in-ubuntu-9-10-karmic-server.html
+http://www.howtoforge.com/linux_webradio_with_icecast2_ices2
+http://www.wifiz.co.uk/content/how-recover-linux-ec2-amazon-instance-lost-ssh-access-or-locked-out
+http://wiki.nginx.org/Install#Official_Debian.2FUbuntu_packages
+
+Roteiros e fontes:
+	- http://debianhelp.wordpress.com/2012/07/01/how-to-install-lamp-server-on-ubuntu-12-04-lts/
+- instalado tomcat
+	Roteiro https://help.ubuntu.com/12.04/serverguide/tomcat.html
+	# apt-get install tomcat7 tomcat7-admin
+	* configurado o arquivo do servidor para responder na porta 8181 e o AJP responder no 8109
+		# nano /etc/tomcat7/server.xml
+			<Connector port="8181" protocol="HTTP/1.1"
+		               connectionTimeout="20000"
+		               URIEncoding="UTF-8"
+		               redirectPort="8443" />
+			...
+			<Connector port="8109" protocol="AJP/1.3" redirectPort="8443" />
+	instalado o app de administracao do tomcat
+		# apt-get install tomcat7-admin
+	configurado os usuarios de administracao adicionando o gerente do server
+		$ cd /etc/tomcat7/
+		# editor tomcat-users.xml
+			<role rolename="manager-gui"/>
+			<role rolename="admin"/>
+			<user username="gerente" password="w4o1l5v2erine" roles="admin,manager-gui" />
+- removi e reinstalei o virtual box com o deb da versao mais atual
+	* instalar a chave publica do vbox
+		$ wget -q http://download.virtualbox.org/virtualbox/debian/oracle_vbox.asc -O- | sudo apt-key add -
+	* adicionar ao source list as seguintes fontes:
+		+ deb http://download.virtualbox.org/virtualbox/debian precise contrib
+	* se preferir pode usar o comando 
+		$ sudo sh -c 'echo "deb http://download.virtualbox.org/virtualbox/debian precise contrib" >> /etc/apt/sources.list'
+	* instalar o app 
+		# apt-get update & apt-get install virtualbox-4.2 dkms
+	* apos a instalacao instalar o extension pack 
+		+ baixar o pacote com:
+			aria2c -x16 -c -V http://download.virtualbox.org/virtualbox/4.2.16/Oracle_VM_VirtualBox_Extension_Pack-4.2.16-86992.vbox-extpack
+		+ clicar com o botão option do mouse e selecionar "Open with Oracle VM Virtualbox"
+		+ na tela em sequencia confirmar a instalacao; aceitar a licenca e em seguida entrar com a senha root/sudo para instalar o pacote.
+- shutdown (20130828 14:29) e backup com clonezilla (15:00)
+	* backup testado com restore apos modificacoes no sistema.
+- (entrementes) instalar back-in-time
+	* roteiro: https://launchpad.net/~bit-team/+archive/stable
+	* Step 1 : Before beginning the installation, Open the terminal by pressing CTRL + ALT + T from your keyboard. When the terminal opens, run the following command in the terminal to add the PPA for Back In Time on your Ubuntu system.
+		$ sudo add-apt-repository ppa:bit-team/stable
+	* Step 2 : Next, run the following command in the terminal to update your Ubuntu system.
+		$ sudo apt-get update
+	* Step 3 : Finally, run the following command in the terminal to install Back In Time 1.0.8 version for GNOME on your Ubuntu system.
+		$ sudo apt-get install backintime-gnome backintime-common
+That's All and now enjoy the features of Back In Time on your Ubuntu system.
+	+ See more at: http://ashu-geek.blogspot.com.br/2012/02/back-in-time-108-simple-backup-tool-for.html#sthash.Tx5WhDXU.dpuf
+- adicionado o sync do firefox dentre outras configuracoes pessoais.
+- realizado backup do home com deja-dup usando o Ubuntu One como storage (defaults - add home - exclude trash download).
+20130830
+- criar certificado ssl para o server
+	* roteiro: http://httpd.apache.org/docs/2.0/ssl/ssl_faq.html#selfcert
+	* criar diretorio para guardar as chaves (~/dev/ssl)
+		$ mkdir ~/dev/ssl
+	* criar os arquivos isis.key e o isis.crt
+		$ openssl req -new -x509 -nodes -out server.crt -keyout server.key
+	* adicionar uma password para a key (inserindo o password e confirmando): 
+		$ openssl rsa -des3 -in isis.key -out isis.key.new
+		$ mv isis.key.new isis.key
+	* guardar a senha e a chave isis.key em um lugar seguro.
+	* criar repositorio ssl para o apache
+		# mkdir /etc/apache2/ssl/crt && mkdir /etc/apache2/ssl/key
+		# cp ~/dev/ssl/isis.key /etc/apache2/ssl/key && cp ~/dev/ssl/isis.crt /etc/apache2/ssl/crt/isis.crt
+	* adicionar o modulo ao apache
+		# a2enmod ssl
+	* adicionar as chaves no servidor apache (/etc/apache2/httpd.conf)
+		+ SSLCertificateFile    /path/to/this/server.crt
+		+ SSLCertificateKeyFile /path/to/this/server.key
+	* reiniciar o apache
+		# services apache2 restart
+- Instalar o Gerenciador de Torrents Deluge Headless para acesso via webbrowser:
+	Roteiro em:	http://www.havetheknowhow.com/Install-the-software/Install-Deluge-Headless.html 
+			http://dev.deluge-torrent.org/wiki/UserGuide/InitScript/Ubuntu
+	* adicionar usuario para o deluge restringindo acesso ao home em /var
+		# adduser --disabled-password --system --home /var/lib/deluge --gecos "Isis Deluge Server" --group deluge
+	* criar repositorio para o log do deluge
+		# mkdir -p /var/log/deluge
+		# chown -R deluge:deluge /var/log/deluge
+		# chmod -R 750 /var/log/deluge
+	* atualizar a fonte de pacotes e instalar o Deluge Daemon
+		# apt-get update
+		# apt-get install deluged && apt-get install deluge-webui deluge-gtk deluge-console
+	* adicionar usuarios ao grupo para facilitar o gerenciamento
+		# adduser igor deluge
+		# adduser netuser deluge
+	* os scripts a seguir foram criado sob meu usario e depois transferidos para seus destinos
+	* criar o arquivo de configucao para o daemon
+		# editor /etc/init/deluged.conf
+# deluged - Deluge daemon
+#
+# The daemon component of Deluge BitTorrent client. Deluge UI clients
+# connect to this daemon via DelugeRPC protocol.
+
+description "Isis Torrent Daemon"
+author "Isis"
+
+start on filesystem and stopped networking
+stop on runlevel [016]
+
+respawn
+respawn limit 5 30
+
+env uid=deluge
+env gid=deluge
+env umask=007
+
+exec start-stop-daemon -S -c $uid:$gid -k $umask -x /usr/bin/deluged -- -d -l /var/log/deluge/daemon.log -L info
+	
+	* criar o arquivo de configucao para a web interface:
+		# editor /etc/init/deluge-web.conf
+# deluge-web - Deluge Web UI
+#
+# The Web UI component of Deluge BitTorrent client, connects to deluged and
+# provides a web application interface for users. Default url: http://localhost:8112
+
+description "Isis Torrent Interface"
+author "Isis"
+
+start on started deluged
+stop on stopping deluged
+
+respawn
+respawn limit 5 30
+
+env uid=deluge
+env gid=deluge
+env umask=027
+
+exec start-stop-daemon -S -c $uid:$gid -k $umask -x /usr/bin/deluge-web -- -l /var/log/deluge/web.log -L info
+	
+	* criar o script para fazer o rotate log
+		# editor /etc/logrotate.d/deluge
+/var/log/deluge/*.log {
+        rotate 4
+        weekly
+        missingok
+        notifempty
+        compress
+        delaycompress
+        sharedscripts
+        postrotate
+                initctl restart deluged >/dev/null 2>&1 || true
+                initctl restart deluge-web >/dev/null 2>&1 || true
+        endscript
+}
+	* iniciar o servidor e a interface web com
+		# service deluged start
+		# service deluge-web start
+	* senha default do servidor web "deluge" que foi alterada no primeiro login para w4o1l5v2erine. 
+	* alterar a porta de acesso web para 11200
+	* seguido roteiro do developer em http://dev.deluge-torrent.org/wiki/UserGuide/InitScript/Ubuntu%2011.04%2B%20%28Upstart%20Job%29
+- backup image com o clonezila
+## 13:44 
+- instalando o squeezebox server aka Logitech MediaServer
+	* editar o /etc/apt/source.list e adicionar deb http://debian.slimdevices.com stable main
+		# apt-get update
+		# apt-get install logitechmediaserver
+		# service logitechmediaserver restart
+	* acessar o servidor via web na porta default 9000 e terminar de configurar as midias.
+	roteiro - http://www.havetheknowhow.com/Install-the-software/Install-Squeezebox-server.html
+- instalado mediaip de acordo com o roteiro em:
+	* mediaip - http://www.havetheknowhow.com/Install-the-software/Install-MusicIP.html
+		$ wget http://www.amplifiedmusicservices.com/downloads/MusicMixer_x86_1.8.tgz
+		$ tar -zxvf MusicMixer_x86_1.8.tgz
+		$ rm MusicMixer_x86_1.8.tgz
+		$ mv MusicIP/MusicMagicMixer MusicMagicMixer
+		$ rm -r MusicIP
+		$ mv MusicMagicMixer MusicIP
+	* editar o arquivo mmserver dentro do diretorio adicionando o usuario e o diretorio para o servidor i.e. /home/user/MusicIP
+		# cp mmserver /etc/init.d
+		# ls - /etc/rc2.d
+	* procurar na lista como o servidor do squeeze box ta subindo S## no caso S20
+	* para assegurar que o musicip server inicie antes do squeeze 
+		# sudo update-rc.d mmserver defaults 19
+- instalado o mediatomb
+		# apt-get update
+		# apt-get instal mediatomb
+	* o acesso devera ser feito pela porta 49152
+
+
+
+
+
+
+http://wiki.xbmc.org/index.php?title=HOW-TO:Install_XBMC_for_Linux#Ubuntu
+http://www.noobslab.com/2013/01/install-xbmc-120-frodo-in-ubuntu.html
+http://wiki.xbmc.org/index.php?title=Archive:HOW-TO:Install_XBMC_on_Ubuntu/HOW-TO_1
+http://youresuchageek.blogspot.fr/2012/06/xbmc-install-and-config-howto-for-linux.html
+http://wiki.xbmc.org/index.php?title=HOW-TO:Install_XBMC_on_Ubuntu/with_AMD_GPU
+
+
+
+
+
+- instalar servidor de email (Postfix) - MTA/MDA
+	installing postfix com o comando
+		# apt-get install postfix
+	configurar o postfix com o comando
+		# dpkg-reconfigure postfix
+		Sera aprensentado as opcoes para configurar o sistema e selecionado:
+			ok		    
+			Internet Site
+			aset.sytes.net
+			steve
+			aset.sytes.net, localhost.localdomain, localhost
+			No
+			127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 192.168.0.0/24
+			0
+			+
+			all
+
+ 	configurar o formato maildir 
+		# postconf -e 'home_mailbox = Maildir/'
+------------------- Continuar com a instalacao do PAM_motd --------------------
+
+3274
+33698496
+exame angelo coluna 
+## October 14, 2012
+- corrigido problema encontrado no vnc (.vnc/xstartup);
+- instalado o mailtools para receber os erros do sistema, em especial os jobs que estao no cron.
+- Instalar o smtp para enviar emails.
+	roteiro http://www.havetheknowhow.com/Configure-the-server/Install-ssmtp.html
+	# apt-get install ssmtp
+	editar o arquivo /etc/ssmtp/ssmtp.conf e /etc/ssmtp/revaliases
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+#
+# Config file for sSMTP sendmail
+#
+# The person who gets all mail for userids < 1000
+# Make this empty to disable rewriting.
+root=igor.salles@gmail.com
+
+# The place where the mail goes. The actual machine name is required no 
+# MX records are consulted. Commonly mailhosts are named mail.domain.com
+# mailhub=mail
+mailhub=smtp.gmail.com:587
+
+AuthUser=igor.salles@gmail.com
+AuthPass=heal0483
+UseTLS=YES
+UseSTARTTLS=YES
+
+# Where will the mail seem to come from?
+#rewriteDomain=
+rewriteDomain=gmail.com
+
+# The full hostname
+# hostname=isis
+hostname=igor.salles@gmail.com
+
+# Are users allowed to set their own From: address?
+# YES - Allow the user to specify their own From: address
+# NO - Use the system generated From: address
+FromLineOverride=YES
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+root:YourFromName@gmail.com:smtp.gmail.com:587
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+	executado teste enviando email para mim mesmo bem sucedido.
+		$ ssmtp igor.salles@ymail.com
+			To: igor.salles@ymail.com
+			From: igor@isis
+			Subject: teste de email
+			
+			Verificando se esta tudo bem!
+
+
+
+
+## October 15, 2012
+
+
+
+
+
+
+
+
+
+
+- ***TODO*** instalar um bittorrent sem cabeca pra baixar e compartilhar arquivos. no momento nao me atrai essa configuracao.
+	http://www.havetheknowhow.com/Install-the-software/Install-Deluge-Headless.html
+	http://www.havetheknowhow.com/Install-the-software/Install-FlexGet.html
+
+
+## 08 outubro 2012
+- continuando a instalacao do ftpd.
+•••••••••
+
+
+
+	***TODO*** configurar o vsftpd
+- install apache http server
+	a haver nao configurado ainda
+	 
+		
+
+
+
+
+
+
+*******TODO*********** ler mais sobre o xmbc *******************
+http://xbmc.org/about/
+XBMC is an award-winning free and open source (GPL) software media player and entertainment hub for digital media. XBMC is available for Linux, OSX, and Windows. Created in 2003 by a group of like minded programmers, XBMC is a non-profit project run and developed by volunteers located around the world. More than 50 software developers have contributed to XBMC, and 100-plus translators have worked to expand its reach, making it available in more than 30 languages.
+
+While XBMC functions very well as a standard media player application for your computer, it has been designed to be the perfect companion for your HTPC. Supporting an almost endless range of remote controls, and combined with its beautiful interface and powerful skinning engine, XBMC feels very natural to use from the couch and is the ideal solution for your home theater.
+
+Currently XBMC can be used to play almost all popular audio and video formats around. It was designed for network playback, so you can stream your multimedia from anywhere in the house or directly from the internet using practically any protocol available. Use your media as-is: XBMC can play CDs and DVDs directly from the disk or image file, almost all popular archive formats from your hard drive, and even files inside ZIP and RAR archives. It will even scan all of your media and automatically create a personalized library complete with box covers, descriptions, and fanart. There are playlist and slideshow functions, a weather forecast feature and many audio visualizations. Once installed, your computer will become a fully functional multimedia jukebox.
+
+It is difficult to put into words all that XBMC can do, head to the gallery to see some examples, or take the plunge and Try it Today.
+	
+	
+
+
+
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+Comandos Uteis
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+scp - secure copy
+	scp user@origem:/path/file.ext user@destino:/path/file.ext
+pklill - look up or signal processes based on name and other attributes
+	mata o(s) processos de acordo com o nome ou atributo. util para remover todos os processos de um determinado usuario, i.e. pkill -u igor
+usermod - modifica uma conta de usuario
+	extremamente util quando trabalhando com nfs que necessariamente necessida de um uid igual em todos os sistemas, i.e. usermod -u 501 igor
+adduser - # sudo adduser <username> <groupname> adiciona um usuario existente a um grupo tbm existente equivalente a # sudo usermod -aG <groupname> <username>
+	
+
+
+
+	Aparentemente todos os servicos afp estao funcioando como esperado
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+
+
+
+		2012262200310 Luiz 
+
+*21*numero#
+*61*numero enviar #
+2012
+
+
+
+
+
+
+
+acessos de igor adm, cdrom, dip, lpadmin, netusers, plugdev, sambashare, sudo
+
+		
+
+	usuario:	netuser
+	grupo:		netusers
+	senha:		***inativa***
+
+
+
+
+
+- *** TODO *** Instalar o lamp + tomcat os comandos sao: FEITO
+	sudo apt-get install -d apache2 php5 libapache2-mod-php5 mysql-server libapache2-mod-auth-mysql php5-mysql phpmyadmin tomcat7
+	sudo apt-get -d install lamp-server^
+
+
+
+
+
+
+
+
+
+- ***TODO*** LTSP 
+	http://www.havetheknowhow.com/Configure-the-server/Install-LTSP.html *** nao achei pertinente instalar e configurar um ambiente thin client ja que o servidor nao vai ter clientes para isso agora.
+
+
+
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+Comandos Uteis
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+apt-cache search <criterio>
+scp - secure copy
+	scp user@origem:/path/file.ext user@destino:/path/file.ext
+pklill - look up or signal processes based on name and other attributes
+	mata o(s) processos de acordo com o nome ou atributo. util para remover todos os processos de um determinado usuario, i.e. pkill -u igor
+usermod - modifica uma conta de usuario
+	extremamente util quando trabalhando com nfs que necessariamente necessida de um uid igual em todos os sistemas, i.e. usermod -u 501 igor
+adduser - # sudo adduser <username> <groupname> adiciona um usuario existente a um grupo tbm existente equivalente a # sudo usermod -aG <groupname> <username>
+gksudo - abrir um app de interface grafica com privilegios de root;
+
+
+*-*-*-TODO-*-*-*
+- configurar o sync do firefox;
+
+
+*-*-*-CONFIGURACOES-*-*-*
+- Conexao aos servidores pelo MAC OS X via Finder
+	a) nfs://isis.local:/export/
+	b) smb://isis.local
+	c) vnc://isis.local:5901
+	d) ftps://isis.local:21000
+	e) ssh isis.local -p 42222
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

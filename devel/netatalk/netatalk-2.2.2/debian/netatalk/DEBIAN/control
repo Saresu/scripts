@@ -1,0 +1,20 @@
+Package: netatalk
+Version: 2.2.2-1ubuntu2
+Architecture: amd64
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Installed-Size: 3766
+Depends: libacl1 (>= 2.2.51-8), libattr1 (>= 1:2.4.46-8), libavahi-client3 (>= 0.6.16), libavahi-common3 (>= 0.6.16), libc6 (>= 2.15), libcups2 (>= 1.4.0), libdb5.3, libgcrypt11 (>= 1.4.5), libgssapi-krb5-2 (>= 1.10+dfsg~), libldap-2.4-2 (>= 2.4.7), libpam0g (>= 0.99.7.1), libwrap0 (>= 7.6-4~), perl, netbase, libpam-modules
+Recommends: lsof, rc, db-util, procps, cracklib-runtime, libpam-cracklib, avahi-daemon
+Suggests: texlive-base-bin, groff, quota, db4.2-util
+Section: net
+Priority: extra
+Homepage: http://netatalk.sourceforge.net/
+Description: AppleTalk user binaries
+ Netatalk is an implementation of the AppleTalk Protocol Suite for
+ BSD-derived systems.  The current release contains support for
+ EtherTalk Phase I and II, DDP, RTMP, NBP, ZIP, AEP, ATP, PAP, ASP, and
+ AFP.
+ .
+ This package contains all daemon and utility programs as well as Netatalk's
+ static libraries.
+Original-Maintainer: Jonas Smedegaard <dr@jones.dk>

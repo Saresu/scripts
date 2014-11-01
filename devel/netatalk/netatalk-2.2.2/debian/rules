@@ -1,0 +1,147 @@
+#!/usr/bin/make -f
+# -*- mode: makefile; coding: utf-8 -*-
+# Copyright 2003-2005, Sebastian Rittau <srittau@debian.org>
+# Copyright 2004, 2006-2010, Jonas Smedegaard <dr@jones.dk>
+# Description: Main Debian packaging script for Netatalk
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+include /usr/share/cdbs/1/rules/upstream-tarball.mk
+include /usr/share/cdbs/1/rules/utils.mk
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/autotools.mk
+include /usr/share/hardening-includes/hardening.make
+
+DEB_UPSTREAM_URL = http://downloads.sourceforge.net/netatalk
+DEB_UPSTREAM_TARBALL_BASENAME_MANGLE = s/~(alpha|beta|rc)/-\1/
+DEB_UPSTREAM_TARBALL_MD5 = c00dd0b35279d6daac6e3306576cecaf
+
+# Override defaults for old-style update-rc.d
+#  * Start and stop at priority 50 (FIXME: explain reasoning)
+#  * Stop only in runlevel 1 (let system kill it in runlevels 0 and 6)
+DEB_UPDATE_RCD_PARAMS = start 50 2 3 4 5 . stop 50 1 .
+
+# Tighten security - more info at http://wiki.debian.org/Hardening
+CFLAGS += $(HARDENING_CFLAGS)
+LDFLAGS += $(HARDENING_LDFLAGS)
+CPPFLAGS += -D_IPP_PRIVATE_STRUCTURES
+
+DEB_CONFIGURE_EXTRA_FLAGS := \
+	--with-shadow --enable-fhs		\
+	--enable-tcp-wrappers			\
+	--enable-timelord --enable-overwrite	\
+	--with-pkgconfdir=/etc/netatalk		\
+	--enable-krb4-uam --enable-krbV-uam	\
+	--with-cnid-dbd-txn			\
+	--with-libgcrypt-dir			\
+	--with-cracklib=/var/cache/cracklib/cracklib_dict	\
+	--disable-srvloc --enable-zeroconf	\
+	--enable-ddp				\
+	--enable-debian
+
+DEB_INSTALL_EXAMPLES_netatalk = debian/examples/*
+
+openssl_build_depends = libssl-dev
+
+# libgcrypt is GPL-compatible, but openssl supports randnum auth
+ifneq (,$(findstring openssl,$(DEB_BUILD_OPTIONS)))
+DEB_CONFIGURE_EXTRA_FLAGS += --with-ssl-dir --enable-pgp-uam
+uamlist = uams_dhx2.so,uams_clrtxt.so,uams_dhx.so,uams_randnum.so
+else
+DEB_CONFIGURE_EXTRA_FLAGS += --without-ssl-dir
+uamlist = uams_dhx2.so,uams_clrtxt.so
+endif
+
+# Refuse GPL build with openssl build-dependencies included
+post-patches::
+	$(if $(findstring openssl,$(DEB_BUILD_OPTIONS)),,$(if $(shell egrep -i '^Build-Depends.*$(openssl_build_depends)' debian/control),$(error OpenSSL build-dependencies found in GPL build!)))
+
+# Check that we do not install anything linked with libssl in a GPL build
+binary-post-install/netatalk::
+	$(if $(findstring openssl,$(DEB_BUILD_OPTIONS)),,$(if $(shell objdump -x debian/netatalk/usr/lib/netatalk/* 2> /dev/null | sed -n '/NEEDED \+libssl\.so/p'),$(error OpenSSL dependencies found in GPL build!)))
+
+# Re-install initscript with debhelper to add pre- and postinst routines
+install/netatalk::
+	mv $(DEB_DESTDIR)/etc/init.d/netatalk debian/netatalk.init
+
+clean::
+	rm -f debian/netatalk.init
+
+# Rename files w/ manpage references to avoid namespace conflicts
+#  * uniconv → netatalk-uniconv
+#  * install netatalk-uniconv as system binary
+bindir=debian/netatalk/usr/bin
+man1dir=debian/netatalk/usr/share/man/man1
+binary-post-install/netatalk::
+	mv $(bindir)/uniconv $(bindir)/../sbin/netatalk-uniconv
+	perl -p -e 's/(?<!Title: )(uniconv)\\b/netatalk(?(1)\\-)$$2/g;s/(TH "UNICONV" )"1"/$$1"8"/' <$(man1dir)/uniconv.1 >$(man1dir)/../man8/netatalk-uniconv.8
+	rm $(man1dir)/uniconv.1
+
+# Adjust PAM modules and UAMs loaded by default, depending on ssl support
+binary-post-install/netatalk::
+	perl -i -pe 's/^#AFPD_UAMLIST=.*/#AFPD_UAMLIST="-U $(uamlist)"/' debian/netatalk/etc/default/netatalk
+	perl -i -pe 's/^AFPD_UAMLIST=.*/AFPD_UAMLIST="-U $(uamlist)"/' debian/netatalk/etc/init.d/netatalk
+
+# Remove unnecessary files
+binary-post-install/netatalk::
+	rm debian/netatalk/usr/bin/netatalk-config
+	rm debian/netatalk/usr/lib/libatalk.*
+	rm debian/netatalk/usr/share/man/man1/afppasswd.1
+	rm -r debian/netatalk/usr/include
+	rm -r debian/netatalk/usr/share/aclocal
+	rm -r debian/netatalk/var
+	rm debian/netatalk/usr/lib/netatalk/*.la
+
+# Create patch to get in sync with upstream CVS
+get-orig-vcs: patchfile = 000_cvs_$(shell date '+%Y%m%d').patch
+get-orig-vcs: get-orig-source
+	f="$(DEB_UPSTREAM_WORKDIR)/$(patchfile)"; \
+		[ ! -e "$$f" ] || ( echo "ERROR: File \"$$f\" already exist!"; exit 1 )
+	d="$(DEB_UPSTREAM_WORKDIR)/vcstemp"; \
+		mkdir "$$d" || ( echo "ERROR: Directory \"$$d\" already exist!"; exit 1 )
+	tar -zx -C "$(DEB_UPSTREAM_WORKDIR)/vcstemp" \
+		< "$(DEB_UPSTREAM_WORKDIR)/$(cdbs_upstream_local_tarball)"
+	d="$(DEB_UPSTREAM_WORKDIR)/vcstemp/netatalk.orig"; \
+		[ -e "$$d" ] || mv "$(DEB_UPSTREAM_WORKDIR)/vcstemp"/* "$$d"
+	cd "$(DEB_UPSTREAM_WORKDIR)/vcstemp" \
+		&& cvs -d:pserver:anonymous@netatalk.cvs.sourceforge.net:/cvsroot/netatalk co -r branch-netatalk-2-0 -P netatalk \
+		&& diff -ruN $(autotools-files:%=-x %) -x doc -x CVS -x .cvsignore netatalk.orig netatalk \
+			> "../$(patchfile)" \
+			|| [ $$? -lt 2 ] # generating a diff is not (at all) fatal
+	rm -rf "$(DEB_UPSTREAM_WORKDIR)/vcstemp"
+
+# Needed for by upstream build process
+CDBS_BUILD_DEPENDS += , libdb-dev, libwrap0-dev, libpam0g-dev, libcups2-dev, libkrb5-dev, libltdl3-dev
+CDBS_BUILD_DEPENDS += , libgcrypt11-dev, libcrack2-dev
+CDBS_BUILD_DEPENDS += , libavahi-client-dev, libldap2-dev, libacl1-dev
+ifneq (,$(findstring openssl,$(DEB_BUILD_OPTIONS)))
+CDBS_BUILD_DEPENDS += , $(openssl_build_depends)
+endif
+
+# Needed for our packaging routines
+CDBS_BUILD_DEPENDS += , d-shlibs, hardening-includes
+
+# Needed (always/often/seldom) at runtime
+#  * netbase needed by network-facing daemons
+#  * libpam-modules, libpam-cracklib, cracklib-runtime and avahi-daemon needed by daemons afpd and papd
+#  * lsof and procps needed by script macusers
+#  * rc needed by script acleandir.rc
+#  * db-util needed by script cnid_maint
+#  * texlive-base-bin (dvips) and groff (roff2ps) needed by script etc2ps
+#  * quota needed by daemon afpd
+#  * db4.2-util needed by example script netatalk_update.sh for upgrades
+#    from 2.0.4~beta2-4 and earlier: can be dropped after Squeeze+1
+CDBS_DEPENDS = netbase, libpam-modules
+CDBS_RECOMMENDS = lsof, rc, db-util, procps, cracklib-runtime, libpam-cracklib, avahi-daemon
+CDBS_SUGGESTS = texlive-base-bin, groff, quota, db4.2-util

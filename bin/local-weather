@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+#
+# Prints the local weather information for the MOTD.
+#
+# Replace KINT with your local weather station.
+# Local stations can be found here: http://www.weather.gov/tg/siteloc.shtml
+echo
+weather -v SBBR
+echo

@@ -1,0 +1,29 @@
+Format: 1.8
+Date: Sat, 02 Nov 2013 17:18:24 +0000
+Source: netatalk
+Binary: netatalk
+Architecture: source amd64
+Version: 2.2.2-1ubuntu2
+Distribution: trusty
+Urgency: low
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Changed-By: Dmitrijs Ledkovs <xnox@ubuntu.com>
+Description: 
+ netatalk   - AppleTalk user binaries
+Changes: 
+ netatalk (2.2.2-1ubuntu2) trusty; urgency=low
+ .
+   * No change rebuild against db 5.3.
+Checksums-Sha1: 
+ 6b3ad6ce70d90d924ffec8509959dd6aa2a0a681 1331 netatalk_2.2.2-1ubuntu2.dsc
+ aaf7bb0b6302ec51d6feb092c19588d66988e6a8 44696 netatalk_2.2.2-1ubuntu2.debian.tar.gz
+ d375719d2d3991e784ac74c73b10fc5d8d1f0838 729746 netatalk_2.2.2-1ubuntu2_amd64.deb
+Checksums-Sha256: 
+ 6a86f08bea02225911ad055d2ffab16c83a902de4baa28701aa4c9c77495a00c 1331 netatalk_2.2.2-1ubuntu2.dsc
+ b141acc495f9731b4be181daaec3afe202293aa18610ea58960d1df46bfda3e1 44696 netatalk_2.2.2-1ubuntu2.debian.tar.gz
+ b6be7d49d09677ab83d3888e9fdb8c25db07ca20cefb30e4042029a163411ac0 729746 netatalk_2.2.2-1ubuntu2_amd64.deb
+Files: 
+ f4b64bc85f2648bd6c5a11ca4788509a 1331 net extra netatalk_2.2.2-1ubuntu2.dsc
+ e1c5b05a80ca121e496c20e1dc7591f2 44696 net extra netatalk_2.2.2-1ubuntu2.debian.tar.gz
+ 8d334088e7720cb7a516cf358ba4c64a 729746 net extra netatalk_2.2.2-1ubuntu2_amd64.deb
+Original-Maintainer: Jonas Smedegaard <dr@jones.dk>
